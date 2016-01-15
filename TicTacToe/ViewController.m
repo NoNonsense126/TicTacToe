@@ -20,6 +20,8 @@
 @property (weak, nonatomic) IBOutlet UIButton *buttonNine;
 @property (weak, nonatomic) IBOutlet UILabel *whichPlayerLabel;
 @property int numberOfMoves;
+@property int cellsPerRow;
+@property int totalCells;
 @property NSString *winner;
 @end
 
@@ -27,54 +29,152 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.numberOfMoves = 0;
+    [self gameBeginSettings];
 }
 
 - (IBAction)onPlayButtonTapped:(UIButton *)sender {
-    [self enterPlayerMove:sender];
-    if(self.numberOfMoves < 9){
-        [self enterComputerValue];
+    if(sender.currentTitle != nil){
+        return ;
     }
-//    [self checkGameWon];
+
+    [self enterPlayerMove:sender];
+    [self enterComputerValue];
     
-}
-
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 
 - (void)enterPlayerMove:(UIButton *) sender {
     [sender setTitle:@"X" forState:UIControlStateNormal];
     [sender setTitleColor:[UIColor blueColor] forState:UIControlStateNormal];
     
+    if(![[self whoWon:sender] isEqualToString:@""]){
+        [self displayWinningAlert:[self whoWon:sender]];
+    };
     self.whichPlayerLabel.text = @"Computer's turn";
     self.numberOfMoves++;
 }
 
 
 - (void)enterComputerValue {
-    BOOL enteredValue = false;
-    
-    while (!enteredValue) {
-        int randomNumber = (arc4random() % 9) + 100;
-        UIButton *button = (UIButton *)[self.view viewWithTag:randomNumber];
+   if(self.numberOfMoves < self.totalCells){
+        BOOL enteredValue = false;
+        UIButton *button;
+        while (!enteredValue) {
+            int randomNumber = (arc4random() % self.totalCells) + 100;
+            button = (UIButton *)[self.view viewWithTag:randomNumber];
         
-        NSString *buttonTitle = button.currentTitle;
-        if (buttonTitle == nil) {
-            [button setTitle:@"O" forState:UIControlStateNormal];
-            [button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-            enteredValue = true;
+            NSString *buttonTitle = button.currentTitle;
+            if (buttonTitle == nil) {
+                [button setTitle:@"O" forState:UIControlStateNormal];
+                [button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+                enteredValue = true;
+            }
         }
-    }
-    self.numberOfMoves++;
-    self.whichPlayerLabel.text = @"Player's turn";
+       if(![[self whoWon:button] isEqualToString:@""]){
+           [self displayWinningAlert:[self whoWon:button]];
+       };
+        self.numberOfMoves++;
+        self.whichPlayerLabel.text = @"Player's turn";
+   }
 }
 
-//- (NSString *)whoWon {
-//    if([self.buttonOne.titleLabel.text isEqualToString:self.buttonTwo.titleLabel.text] && [self.buttonTwo.titleLabel.text isEqualToString:self.buttonThree.titleLabel.text] ){
-//        
-//    }
-//}
+- (NSString *) whoWon:(UIButton *)lastButton{
+    // find location of button
+    int boxNum = (int)[lastButton tag] - 100;
+    
+    //check same row + column + diagonal
+    if ([self rowComplete:boxNum] || [self columnComplete:boxNum] || [self diagonalComplete:boxNum]) {
+        return lastButton.currentTitle;
+    }
+    
+    if(self.numberOfMoves == 9){
+        return @"Draw";
+    }
+    
+    return @"";
+}
+
+- (BOOL)rowComplete:(int)boxNum{
+    // find which row
+    int rowIndex = (boxNum)/self.cellsPerRow;
+    // check first object with every object in row
+    for (int i = 1; i < self.cellsPerRow; i++) {
+        if(![[self getButtonTitleLabelByIndex:(rowIndex * self.cellsPerRow)] isEqualToString:[self getButtonTitleLabelByIndex:(rowIndex * self.cellsPerRow) + i]]){
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)columnComplete:(int)boxNum{
+    // find which column
+    int columnIndex = boxNum % self.cellsPerRow;
+    // check first object with every object in column
+    for (int i = 1; i < self.cellsPerRow; i++) {
+        if(![[self getButtonTitleLabelByIndex:columnIndex] isEqualToString:[self getButtonTitleLabelByIndex:columnIndex + (self.cellsPerRow * i)]]){
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)diagonalComplete:(int)boxNum{
+    return [self rightDownDiagonalComplete:boxNum] || [self leftDownDiagonalComplete:boxNum];
+}
+
+- (BOOL)rightDownDiagonalComplete:(int)boxNum{
+    int multiplier = (self.cellsPerRow + 1);
+    if(boxNum % multiplier == 0){
+        for (int i = 0; i < self.cellsPerRow; i++) {
+            if(![[self getButtonTitleLabelByIndex:0] isEqualToString:[self getButtonTitleLabelByIndex:multiplier * i]]){
+                return NO;
+            }
+        }
+        return YES;
+    }
+    return NO;
+    
+}
+
+- (BOOL)leftDownDiagonalComplete:(int)boxNum{
+    int multiplier = (self.cellsPerRow - 1);
+    if(boxNum % multiplier == 0){
+        for (int i = 1; i <= self.cellsPerRow; i++) {
+            if(![[self getButtonTitleLabelByIndex:boxNum] isEqualToString:[self getButtonTitleLabelByIndex:i * multiplier]]){
+                return NO;
+            }
+        }
+        return YES;
+    }
+    return NO;
+    
+}
+
+
+
+- (NSString *) getButtonTitleLabelByIndex:(int)index{
+    int tagNumber = index + 100;
+    UIButton *button = (UIButton *)[self.view viewWithTag:tagNumber];
+    return button.currentTitle;
+}
+
+- (void)displayWinningAlert:(NSString *)message{
+    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Game Won" message:[NSString stringWithFormat:@"%@ has won game", message] preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction *startNewGameAction = [UIAlertAction actionWithTitle:@"Start New Game" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [self gameBeginSettings];
+        for (int i = 0; i < self.totalCells; i++) {
+            UIButton *button = (UIButton *)[self.view viewWithTag:(i + 100)];
+            [button setTitle:nil forState:UIControlStateNormal];
+        }
+    }];
+    
+    [controller addAction:startNewGameAction];
+    [self presentViewController:controller animated:YES completion:nil];
+}
+
+- (void)gameBeginSettings{
+    self.cellsPerRow = 3;
+    self.totalCells = (self.cellsPerRow * self.cellsPerRow);
+    self.numberOfMoves = 0;
+}
 @end
