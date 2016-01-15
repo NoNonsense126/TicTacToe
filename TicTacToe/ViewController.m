@@ -27,11 +27,14 @@
 
 @implementation ViewController
 
+
+//declaring number of moves equals to 0
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self gameBeginSettings];
 }
 
+//if the buttontapped's #of move is less than 9, computer puts value.
 - (IBAction)onPlayButtonTapped:(UIButton *)sender {
     if(sender.currentTitle != nil){
         return ;
@@ -41,7 +44,7 @@
     [self enterComputerValue];
     
 }
-
+    //calling enterplayermove and then blue color x mark will be shown when you press the button
 - (void)enterPlayerMove:(UIButton *) sender {
     [sender setTitle:@"X" forState:UIControlStateNormal];
     [sender setTitleColor:[UIColor blueColor] forState:UIControlStateNormal];
@@ -49,15 +52,17 @@
     if(![[self whoWon:sender] isEqualToString:@""]){
         [self displayWinningAlert:[self whoWon:sender]];
     };
+    //it shows "computer's turn" on the screen and number of moves will increase by 1
     self.whichPlayerLabel.text = @"Computer's turn";
     self.numberOfMoves++;
 }
 
-
+    //
 - (void)enterComputerValue {
    if(self.numberOfMoves < self.totalCells){
         BOOL enteredValue = false;
         UIButton *button;
+       //when value is entered, random value
         while (!enteredValue) {
             int randomNumber = (arc4random() % self.totalCells) + 100;
             button = (UIButton *)[self.view viewWithTag:randomNumber];
@@ -69,11 +74,14 @@
                 enteredValue = true;
             }
         }
+       
+       self.numberOfMoves++;
+       
        if(![[self whoWon:button] isEqualToString:@""]){
            [self displayWinningAlert:[self whoWon:button]];
        };
-        self.numberOfMoves++;
-        self.whichPlayerLabel.text = @"Player's turn";
+       
+       self.whichPlayerLabel.text = @"Player's turn";
    }
 }
 
@@ -85,8 +93,9 @@
     if ([self rowComplete:boxNum] || [self columnComplete:boxNum] || [self diagonalComplete:boxNum]) {
         return lastButton.currentTitle;
     }
-    
+    NSLog(@"number of moves %d", self.numberOfMoves);
     if(self.numberOfMoves == 9){
+
         return @"Draw";
     }
     
