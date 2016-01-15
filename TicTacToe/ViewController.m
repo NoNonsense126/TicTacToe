@@ -49,12 +49,13 @@
     [sender setTitle:@"X" forState:UIControlStateNormal];
     [sender setTitleColor:[UIColor blueColor] forState:UIControlStateNormal];
     
+    self.numberOfMoves++;
+    
     if(![[self whoWon:sender] isEqualToString:@""]){
         [self displayWinningAlert:[self whoWon:sender]];
     };
     //it shows "computer's turn" on the screen and number of moves will increase by 1
     self.whichPlayerLabel.text = @"Computer's turn";
-    self.numberOfMoves++;
 }
 
     //
@@ -167,7 +168,12 @@
 }
 
 - (void)displayWinningAlert:(NSString *)message{
-    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Game Won" message:[NSString stringWithFormat:@"%@ has won game", message] preferredStyle:UIAlertControllerStyleAlert];
+    if([message isEqualToString:@"Draw"]){
+        message = @"Draw Game";
+    }else{
+        message = [NSString stringWithFormat:@"%@ has won game", message];
+    }
+    UIAlertController *controller = [UIAlertController alertControllerWithTitle:@"Game Won" message: message preferredStyle:UIAlertControllerStyleAlert];
     
     UIAlertAction *startNewGameAction = [UIAlertAction actionWithTitle:@"Start New Game" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self gameBeginSettings];
